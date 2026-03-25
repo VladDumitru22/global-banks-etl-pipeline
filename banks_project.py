@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
-from config import LOG_PATH, URL, TABLE_ATTRIBS_BEFORE, CSV_EXCHANGE_PATH
+from config import LOG_PATH, URL, TABLE_ATTRIBS_BEFORE, CSV_EXCHANGE_PATH, CSV_PATH
 
 def log_progress(message):
     ''' This function logs the mentioned message of a given stage of the
@@ -60,5 +60,27 @@ def transform(df, csv_path):
 
     return df
 
-print(transform(extract(URL, TABLE_ATTRIBS_BEFORE), CSV_EXCHANGE_PATH))
+def load_to_csv(df, output_path):
+    ''' This function saves the final data frame as a CSV file in
+	the provided path. Function returns nothing.'''
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    df.to_csv(output_path, index=False)
+
+log_progress("Preliminaries complete. Initiating ETL process")
+
+df = extract(URL, TABLE_ATTRIBS_BEFORE)
+log_progress("Data extraction complete. Initiating Transformation process")
+print("Extracted DataFrame:")
+print(df.head())
+
+df = transform(df, CSV_EXCHANGE_PATH)
+log_progress("Data transformation complete. Initiating Loading process")
+print("\nTransformed DataFrame:")
+print(df.head())
+
+load_to_csv(df, CSV_PATH)
+log_progress("Data saved to CSV file")
+print(f"\nData saved to CSV at: {CSV_PATH}")
 
