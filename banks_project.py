@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
-from config import LOG_PATH, URL, TABLE_ATTRIBS_BEFORE
+from config import LOG_PATH, URL, TABLE_ATTRIBS_BEFORE, CSV_EXCHANGE_PATH
 
 def log_progress(message):
     ''' This function logs the mentioned message of a given stage of the
@@ -46,6 +46,19 @@ def transform(df, csv_path):
 	containing the transformed version of Market Cap column to
 	respective currencies'''
 
+    rates_df = pd.read_csv(csv_path)
+
+    rate_eur = rates_df.loc[rates_df['Currency'] == 'EUR', 'Rate'].values[0]
+    rate_gbp = rates_df.loc[rates_df['Currency'] == 'GBP', 'Rate'].values[0]
+    rate_inr = rates_df.loc[rates_df['Currency'] == 'INR', 'Rate'].values[0]
+
+    df['MC_USD_Billion'] = df['MC_USD_Billion'].str.replace(',', '').astype(float)
+
+    df['MC_GBP_Billion'] = round(df['MC_USD_Billion'] * rate_gbp, 2)
+    df['MC_EUR_Billion'] = round(df['MC_USD_Billion'] * rate_eur, 2)
+    df['MC_INR_Billion'] = round(df['MC_USD_Billion'] * rate_inr, 2)
+
     return df
 
+print(transform(extract(URL, TABLE_ATTRIBS_BEFORE), CSV_EXCHANGE_PATH))
 
