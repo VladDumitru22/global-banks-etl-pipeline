@@ -1,9 +1,10 @@
 import os
+import sqlite3
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from datetime import datetime
-from config import LOG_PATH, URL, TABLE_ATTRIBS_BEFORE, CSV_EXCHANGE_PATH, CSV_PATH
+from config import *
 
 def log_progress(message):
     ''' This function logs the mentioned message of a given stage of the
@@ -68,6 +69,30 @@ def load_to_csv(df, output_path):
 
     df.to_csv(output_path, index=False)
 
+def load_to_db(df, sql_connection, table_name):
+    ''' This function saves the final data frame to a database
+	table with the provided name. Function returns nothing.'''
+
+    df.to_sql(table_name, sql_connection, if_exists='replace', index=False)
+
+def run_query(query_statement, sql_connection):
+    ''' This function runs the query on the database table and
+    prints the output on the terminal. Function returns nothing. '''
+
+    try:
+        df = pd.read_sql_query(query_statement, sql_connection)
+        print(f"\nQuery:\n{query_statement}\n")
+        print("Query Output:")
+        print(df)
+    except Exception as e:
+        print(f"Error executing query: {e}")
+
+
+
+''' Here, you define the required entities and call the relevant
+functions in the correct order to complete the project. Note that this
+portion is not inside any function.'''
+
 log_progress("Preliminaries complete. Initiating ETL process")
 
 df = extract(URL, TABLE_ATTRIBS_BEFORE)
@@ -82,5 +107,23 @@ print(df.head())
 
 load_to_csv(df, CSV_PATH)
 log_progress("Data saved to CSV file")
-print(f"\nData saved to CSV at: {CSV_PATH}")
+
+sql_connection = sqlite3.connect(database=DB_NAME)
+log_progress("SQL Connection initiated")
+load_to_db(df, sql_connection, TABLE_NAME)
+sql_connection.commit()
+log_progress("Data loaded to Database as a table, Executing queries")
+
+run_query("SELECT * FROM Largest_banks", sql_connection)
+log_progress("Executed query: SELECT * FROM Largest_banks")
+
+run_query("SELECT AVG(MC_GBP_Billion) FROM Largest_banks", sql_connection)
+log_progress("Executed query: SELECT AVG(MC_GBP_Billion) FROM Largest_banks")
+
+run_query("SELECT Name FROM Largest_banks LIMIT 5", sql_connection)
+log_progress("Executed query: SELECT Name FROM Largest_banks LIMIT 5")
+
+sql_connection.close()
+log_progress("Server Connection closed")
+
 
